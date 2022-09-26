@@ -1,7 +1,7 @@
 import mido
 
-mid = mido.MidiFile('happyfarmer_60.mid')
-#mid = mido.MidiFile('Dvorak_Humoreske_mb.mid')
+#mid = mido.MidiFile('happyfarmer_60.mid')
+mid = mido.MidiFile('Dvorak_Humoreske_mb.mid')
 #print(mid.ticks_per_beat) 
 #tickは4分音符を分割した長さの単位で，
 #4分音符＝480ticks，8分音符=240ticks
