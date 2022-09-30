@@ -16,13 +16,11 @@ class MIDIanalyzer:
         #音の種類関連
         self.track_num = 0   #trackの数を格納する
     
-    def GetMIDIfile(self, filename):
+    def getMIDIfile(self, filename):
         #MIDIファイル読み込み
         self.mid = mido.MidiFile(filename)
-        #下はテスト用
-        print(self.mid.ticks_per_beat)
     
-    def GetTimeSignature(self):
+    def getTimeSignature(self):
         #拍子を取得
         for i, track in enumerate(self.mid.tracks):
             for msg in track:
@@ -32,38 +30,24 @@ class MIDIanalyzer:
                     denominator_index = msg_string.find('denominator') + 12
                     self.numerator = int(msg_string[numerator_index])
                     self.denominator = int(msg_string[denominator_index])
-                    #下２行はテスト用
-                    print("numerator = %d" %self.numerator)
-                    print("denominator = %d" %self.denominator)
     
-
-    def GetTempo(self):
+    def getTempo(self):
         #4分音符1個あたりのマイクロ秒を取得
         for msg in self.mid:
             if msg.type == "set_tempo":
                 self.tempo = msg.tempo
-                #下１行はテスト用
-                print(self.tempo)
-        #下１行はテスト用
-        print(self.tempo)
 
         self.microsec_per_ticks = self.tempo/self.mid.ticks_per_beat
-        #下１行はテスト用
-        print(self.microsec_per_ticks)
     
-    def GetLength(self):
+    def getLength(self):
         #曲全体の時間を取得(s)
         self.length = self.mid.length
-        #下１行はテスト用
-        print(self.length)
     
-    def GetTracknum(self):
+    def getTracknum(self):
         #Trackの数を取得
         self.track_num = len(self.mid.tracks)
-        #下１行はテスト用
-        print(self.track_num)
     
-    def PrintBeat(self):
+    def printBeat(self):
         #リアルタイムで拍子を表示
         time_now = 0.0
         while(time_now + self.tempo/(10**6) < self.length):
@@ -78,9 +62,9 @@ class MIDIanalyzer:
 
 if __name__=="__main__":
     midanalyzer = MIDIanalyzer()
-    midanalyzer.GetMIDIfile('happyfarmer_60.mid')
-    midanalyzer.GetTimeSignature()
-    midanalyzer.GetTempo()
-    midanalyzer.GetLength()
-    midanalyzer.GetTracknum()
-    midanalyzer.PrintBeat()
+    midanalyzer.getMIDIfile('happyfarmer_60.mid')
+    midanalyzer.getTimeSignature()
+    midanalyzer.getTempo()
+    midanalyzer.getLength()
+    midanalyzer.getTracknum()
+    midanalyzer.printBeat()
