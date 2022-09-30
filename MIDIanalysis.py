@@ -22,13 +22,11 @@ class MIDIanalyzer:
         #休符の種類を格納
         self.rests = NULL
     
-    def GetMIDIfile(self, filename):
+    def getMIDIfile(self, filename):
         #MIDIファイル読み込み
         self.mid = mido.MidiFile(filename)
-        #下はテスト用
-        print("ticks per beat = %d" %self.mid.ticks_per_beat)
     
-    def GetTimeSignature(self):
+    def getTimeSignature(self):
         #拍子を取得
         #変拍子は考えない．むずい
         for i, track in enumerate(self.mid.tracks):
@@ -39,38 +37,26 @@ class MIDIanalyzer:
                     denominator_index = msg_string.find('denominator') + 12
                     self.numerator = int(msg_string[numerator_index])
                     self.denominator = int(msg_string[denominator_index])
-                    #下２行はテスト用
-                    print("numerator = %d" %self.numerator)
-                    print("denominator = %d" %self.denominator)
     
-
-    def GetTempo(self):
+    def getTempo(self):
         #4分音符1個あたりのマイクロ秒を取得
         for msg in self.mid:
             if msg.type == "set_tempo":
                 self.tempo = msg.tempo
                 #下１行はテスト用
                 #print(self.tempo)
-        #下１行はテスト用
-        print("tempo = %d [micro_s]" %self.tempo)
 
         self.microsec_per_ticks = self.tempo/self.mid.ticks_per_beat
-        #下１行はテスト用
-        print("SpT = %f [micro_s]" %self.microsec_per_ticks)
     
-    def GetLength(self):
+    def getLength(self):
         #曲全体の時間を取得(s)
         self.length = self.mid.length
-        #下１行はテスト用
-        print("length = %f [s]" %self.length)
     
-    def GetTracknum(self):
+    def getTracknum(self):
         #Trackの数を取得
         self.track_num = len(self.mid.tracks)
-        #下１行はテスト用
-        print("track_num = %d" %self.track_num)
     
-    def GetNoteData(self):
+    def getNoteData(self):
         #Track毎にNote_onのnote,velocity,timeを取得するメソッド
         
         #note等の情報はtrack毎に取得しなければならないので2次元配列にする
@@ -86,11 +72,8 @@ class MIDIanalyzer:
                     self.velocity[i].append(msg.velocity)
                     self.time[i].append(msg.time)
                     self.rests[i].append('note')
-        
-        #下1行はテスト用
-        #print(self.velocity[0])
     
-    def GetRests(self):
+    def getRests(self):
         #曲全体の休符を取得する
 
         #track毎に休符位置を取得
@@ -120,15 +103,9 @@ class MIDIanalyzer:
                         self.rests[i][j] = 'not rest'
                     #それ以外は解析不可とする(できるけどしない)
                     else:
-                        self.rests[i][j] = 'cannot analize'
-        
-        #下のループはテスト用
-        for i in range(0, len(self.velocity[0])-1, 1):
-            print({'vel': self.velocity[0][i], 'time':self.time[0][i+1], 'rest':self.rests[0][i]})
-
-                
+                        self.rests[i][j] = 'cannot analize'        
     
-    def PrintBeat(self):
+    def printBeat(self):
         #リアルタイムで拍子を表示
         time_now = 0.0
         while(time_now + self.tempo/(10**6) < self.length):
@@ -141,14 +118,25 @@ class MIDIanalyzer:
         print(time_now)
 
 
+    def checkBug(self):
+        print(self.mid.ticks_per_beat)        
+        print("numerator = %d" %self.numerator)
+        print("denominator = %d" %self.denominator)
+        print(self.tempo)
+        print(self.microsec_per_ticks)
+        print("length = %f" %self.length)
+        print("track_nom = %d" %self.track_num)
+        for i in range(0, len(self.velocity[0])-1, 1):
+            print({'vel': self.velocity[0][i], 'time':self.time[0][i+1], 'rest':self.rests[0][i]})
+
 if __name__=="__main__":
     midanalyzer = MIDIanalyzer()
-    midanalyzer.GetMIDIfile('happyfarmer_60.mid')
-    #midanalyzer.GetMIDIfile('Dvorak_Humoreske_mb.mid')
-    midanalyzer.GetTimeSignature()
-    midanalyzer.GetTempo()
-    midanalyzer.GetLength()
-    midanalyzer.GetTracknum()
-    midanalyzer.GetNoteData()
-    midanalyzer.GetRests()
+    midanalyzer.getMIDIfile('happyfarmer_60.mid')
+    midanalyzer.getTimeSignature()
+    midanalyzer.getTempo()
+    midanalyzer.getLength()
+    midanalyzer.getTracknum()
+    midanalyzer.getNoteData()
+    midanalyzer.getRests()
+    midanalyzer.checkBug()
     #midanalyzer.PrintBeat()
