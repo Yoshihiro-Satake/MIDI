@@ -1,7 +1,11 @@
 import mido
 
-mid = mido.MidiFile('happyfarmer_60.mid')
+#mid = mido.MidiFile('happyfarmer_60.mid')
 #mid = mido.MidiFile('Dvorak_Humoreske_mb.mid')
+#mid = mido.MidiFile('originalMIDI1.mid')
+mid = mido.MidiFile('burgmuller-op100-la-chevaleresque.mid')
+#mid = mido.MidiFile('Burgmuller_100_25_kifujin.mid')
+#mid = mido.MidiFile('originalMIDI6.mid')
 #print(mid.ticks_per_beat) 
 #tickは4分音符を分割した長さの単位で，
 #4分音符＝480ticks，8分音符=240ticks
@@ -15,11 +19,11 @@ mid = mido.MidiFile('happyfarmer_60.mid')
 for track in enumerate(mid.tracks):
     print(track)
 
-for msg in mid.tracks[2]:
+for msg in mid.tracks[0]:
     #恐らく           ↑の数字はMidiTrackのことchannnel毎に分かれてる？
     if msg.type == 'note_on':
-        #print(msg)
-        print(msg.velocity) #音の強さ
+        print(msg)
+        #print(msg.velocity) #音の強さ
         #print(msg.time)     #Δタイム
 
 #for i, track in enumerate(mid.tracks):
