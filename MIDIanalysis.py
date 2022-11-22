@@ -17,7 +17,7 @@ class MIDIanalyzer:
         #音の種類関連
         self.track_num = 0     #trackの数を格納する/多分，基本的にchannel毎にtrackは分かれるぽい？
         #音の情報
-        self.time = NULL       #前の音からの時間(ticks)
+        self.delta_t = NULL       #前の音からの時間(ticks)
         self.velocity = NULL   #音の強さ
         self.note = NULL       #音の高さ(ドレミ的な)
         #休符の種類を格納
@@ -26,6 +26,8 @@ class MIDIanalyzer:
         self.slur = NULL
         #スタッカートか否かを格納
         self.staccato = NULL
+        #そのMetaMessageが何小節目の指令値か記録
+        self.bar = NULL
     
     def getMIDIfile(self, filename):
         #MIDIファイル読み込み
@@ -70,7 +72,7 @@ class MIDIanalyzer:
         #note等の情報はtrack毎に取得しなければならないので2次元配列にする
         self.note = [[] for i in range(self.track_num)]
         self.velocity = [[] for i in range(self.track_num)]
-        self.time = [[] for i in range(self.track_num)]
+        self.delta_t = [[] for i in range(self.track_num)]
         self.rests = [[] for i in range(self.track_num)]
         self.slur = [[] for i in range(self.track_num)]
         self.staccato = [[] for i in range(self.track_num)]
@@ -80,7 +82,7 @@ class MIDIanalyzer:
                 if msg.type == 'note_on':
                     self.note[i].append(msg.note)
                     self.velocity[i].append(msg.velocity)
-                    self.time[i].append(msg.time)
+                    self.delta_t[i].append(msg.time)
                     self.rests[i].append('note')
                     self.slur[i].append('No')
                     self.staccato[i].append('No')
@@ -97,21 +99,21 @@ class MIDIanalyzer:
                 #休符でない音と音の間の切れ目はテキトーに設定
                 if(self.velocity[i][j]==0):      
                     #4分休符
-                    if ((self.ticks_per_beat <= self.time[i][j+1]) and (self.time[i][j+1] < self.ticks_per_beat*1.2)):
+                    if ((self.ticks_per_beat <= self.delta_t[i][j+1]) and (self.delta_t[i][j+1] < self.ticks_per_beat*1.2)):
                         self.rests[i][j] = 'quarter'
                     #2分休符
-                    elif ((self.ticks_per_beat*2 <= self.time[i][j+1]) and (self.time[i][j+1] < self.ticks_per_beat*2.2)):
+                    elif ((self.ticks_per_beat*2 <= self.delta_t[i][j+1]) and (self.delta_t[i][j+1] < self.ticks_per_beat*2.2)):
                         self.rests[i][j] = 'half'
                     #全休符
-                    elif ((self.ticks_per_beat*self.numerator <= self.time[i][j+1]) and (self.time[i][j+1] < self.ticks_per_beat*self.numerator*1.1)):
+                    elif ((self.ticks_per_beat*self.numerator <= self.delta_t[i][j+1]) and (self.delta_t[i][j+1] < self.ticks_per_beat*self.numerator*1.1)):
                         self.rests[i][j] = 'whole'
                     #8分休符
-                    elif ((self.ticks_per_beat*0.5 <= self.time[i][j+1]) and (self.time[i][j+1] < self.ticks_per_beat*0.5*1.2)):
+                    elif ((self.ticks_per_beat*0.5 <= self.delta_t[i][j+1]) and (self.delta_t[i][j+1] < self.ticks_per_beat*0.5*1.2)):
                         self.rests[i][j] = '8th'
-                    elif ((self.ticks_per_beat*0.25 <= self.time[i][j+1]) and (self.time[i][j+1] < self.ticks_per_beat*0.25*1.2)):
+                    elif ((self.ticks_per_beat*0.25 <= self.delta_t[i][j+1]) and (self.delta_t[i][j+1] < self.ticks_per_beat*0.25*1.2)):
                         self.rests[i][j] = '16th'
                     #ただの音の間の切れ目
-                    elif self.time[i][j+1] < self.ticks_per_beat*0.1:
+                    elif self.delta_t[i][j+1] < self.ticks_per_beat*0.1:
                         self.rests[i][j] = 'not rest'
                     #それ以外は解析不可とする(できるけどしない)
                     else:
@@ -124,19 +126,19 @@ class MIDIanalyzer:
         #track毎に休符位置を取得
         for i in range(self.track_num):
             for j in range(1, len(self.note[i])-1, 1):  
-                if(self.velocity[i][j-1] != 0 and self.velocity[i][j+1] != 0 and self.velocity[i][j] == 0 and self.time[i][j+1] <= self.ticks_per_beat*0.01):
+                if(self.velocity[i][j-1] != 0 and self.velocity[i][j+1] != 0 and self.velocity[i][j] == 0 and self.delta_t[i][j+1] <= self.ticks_per_beat*0.01):
                     self.slur[i][j-1] = self.slur[i][j] = 'Yes'
-                elif(self.velocity[i][j-1] != 0 and self.velocity[i][j] != 0 and self.time[i][j+1] > 0):
+                elif(self.velocity[i][j-1] != 0 and self.velocity[i][j] != 0 and self.delta_t[i][j+1] > 0):
                     self.slur[i][j-1] = self.slur[i][j] = 'Yes'
     
     def getStaccato(self):
         for i in range(self.track_num):
             for j in range(0, len(self.note[i])-1, 1):
                 #4分音符
-                if(self.velocity[i][j] != 0 and self.ticks_per_beat*0.5*0.98 <= self.time[i][j+1] and self.time[i][j+1] <= self.ticks_per_beat*0.5*1.05):
+                if(self.velocity[i][j] != 0 and self.ticks_per_beat*0.5*0.98 <= self.delta_t[i][j+1] and self.delta_t[i][j+1] <= self.ticks_per_beat*0.5*1.05):
                     self.staccato[i][j] = '4Maybe'
                 #8分音符
-                elif(self.velocity[i][j] != 0 and self.ticks_per_beat*0.25*0.98 <= self.time[i][j+1] and self.time[i][j+1] <= self.ticks_per_beat*0.25*1.05):
+                elif(self.velocity[i][j] != 0 and self.ticks_per_beat*0.25*0.98 <= self.delta_t[i][j+1] and self.delta_t[i][j+1] <= self.ticks_per_beat*0.25*1.05):
                     self.staccato[i][j] = '8Maybe'
 
             #track内のスタッカートかもしれない部分に関して，連続して出ていたらスタッカートと判定する
@@ -183,7 +185,7 @@ class MIDIanalyzer:
         print("length = %f" %self.length)
         print("track_nom = %d" %self.track_num)
         for i in range(0, len(self.velocity[1])-1, 1):
-            print({'note': self.note[1][i], 'vel': self.velocity[1][i], 'time':self.time[1][i], 'rest':self.rests[1][i], 'slur':self.slur[1][i], 'staccato':self.staccato[1][i]})
+            print({'note': self.note[1][i], 'vel': self.velocity[1][i], 'time':self.delta_t[1][i], 'rest':self.rests[1][i], 'slur':self.slur[1][i], 'staccato':self.staccato[1][i]})
 
 
 
