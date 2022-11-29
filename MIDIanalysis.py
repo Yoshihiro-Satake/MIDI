@@ -1,14 +1,14 @@
-from asyncio.windows_events import NULL
+#from asyncio.windows_events import None
 import mido
 import time
 
 class MIDIanalyzer:
     def __init__(self):
-        self.mid = NULL
+        self.mid = None
         #拍子
         self.numerator = 4     #デフォルトは4
         self.denominator = 4   #デフォルトは4で
-        #時間関連
+        #時間定数関連
         self.ticks_per_beat = 480 #デフォルトは480
         self.tempo = 500000    #四分音符1個にかかる時間．㎲．デフォルトは500000
         self.length = 0.0      #曲の長さを格納する．デフォルトは0.0
@@ -17,17 +17,18 @@ class MIDIanalyzer:
         #音の種類関連
         self.track_num = 0     #trackの数を格納する/多分，基本的にchannel毎にtrackは分かれるぽい？
         #音の情報
-        self.delta_t = NULL       #前の音からの時間(ticks)
-        self.velocity = NULL   #音の強さ
-        self.note = NULL       #音の高さ(ドレミ的な)
+        self.delta_t = None       #前の音からの時間(ticks)
+        self.velocity = None   #音の強さ
+        self.note = None       #音の高さ(ドレミ的な)
+        self.bar = None        #そのMetamessageが何小節目の指令か格納する変数
+        self.time = None       #そのMetamessageが何ticks目にあるか格納する変数
         #休符の種類を格納
-        self.rests = NULL
+        self.rests = None
         #スラーか否かを格納
-        self.slur = NULL
+        self.slur = None
         #スタッカートか否かを格納
-        self.staccato = NULL
-        #そのMetaMessageが何小節目の指令値か記録
-        self.bar = NULL
+        self.staccato = None
+
     
     def getMIDIfile(self, filename):
         #MIDIファイル読み込み
@@ -76,6 +77,8 @@ class MIDIanalyzer:
         self.rests = [[] for i in range(self.track_num)]
         self.slur = [[] for i in range(self.track_num)]
         self.staccato = [[] for i in range(self.track_num)]
+        self.bar = [[] for i in range(self.track_num)]
+        self.time = [[] for i in range(self.track_num)]
         #track毎に値を取得
         for i in range(self.track_num):
             for msg in self.mid.tracks[i]:
@@ -86,6 +89,27 @@ class MIDIanalyzer:
                     self.rests[i].append('note')
                     self.slur[i].append('No')
                     self.staccato[i].append('No')
+                    self.time[i].append(0)
+                    self.bar[i].append(0)
+
+    def getTime(self):
+        for i in range(self.track_num):
+            time = 0
+            for j in range(0, len(self.note[i])-1, 1):
+                time += self.delta_t[i][j]
+                self.time[i][j] = time
+
+    def getBar(self):
+        for i in range(self.track_num):
+            now_bar = 0
+            for j in range(0, len(self.note[i])-1, 1):
+                if(now_bar*self.numerator*self.ticks_per_beat <= self.time[i][j] and self.time[i][j] < (now_bar+1)*self.numerator*self.ticks_per_beat):
+                    self.bar[i][j] = now_bar
+                elif((now_bar+1)*self.numerator*self.ticks_per_beat <= self.time[i][j]):
+                    now_bar += 1
+                    self.bar[i][j] = now_bar
+                else:
+                    self.bar[i][j] = now_bar-1
     
     def getRests(self):
         #曲全体の休符を取得する
@@ -184,16 +208,15 @@ class MIDIanalyzer:
         print(self.microsec_per_ticks)
         print("length = %f" %self.length)
         print("track_nom = %d" %self.track_num)
-        for i in range(0, len(self.velocity[1])-1, 1):
-            print({'note': self.note[1][i], 'vel': self.velocity[1][i], 'time':self.delta_t[1][i], 'rest':self.rests[1][i], 'slur':self.slur[1][i], 'staccato':self.staccato[1][i]})
-
-
+        for i in range(0, len(self.velocity[-1])-1, 1):
+            #print({'note': self.note[1][i], 'vel': self.velocity[1][i], 'time':self.delta_t[1][i], 'rest':self.rests[1][i], 'slur':self.slur[1][i], 'staccato':self.staccato[1][i]})        
+            print({'note': self.note[-1][i], 'vel': self.velocity[-1][i], 'delta_t':self.delta_t[-1][i], 'time': self.time[-1][i], 'bar': self.bar[-1][i]})
 
 if __name__=="__main__":
     midanalyzer = MIDIanalyzer()
-    #midanalyzer.getMIDIfile('happyfarmer_60.mid')
+    midanalyzer.getMIDIfile('happyfarmer_60.mid')
     #midanalyzer.getMIDIfile('originalMIDI6.mid')
-    midanalyzer.getMIDIfile('burgmuller-op100-la-chevaleresque.mid')
+    #midanalyzer.getMIDIfile('burgmuller-op100-la-chevaleresque.mid')
     #midanalyzer.getMIDIfile('Burgmuller_100_25_kifujin.mid')
     midanalyzer.getTicksPerBeat()
     midanalyzer.getTimeSignature()
@@ -201,6 +224,8 @@ if __name__=="__main__":
     midanalyzer.getLength()
     midanalyzer.getTracknum()
     midanalyzer.getNoteData()
+    midanalyzer.getTime()
+    midanalyzer.getBar()
     midanalyzer.getRests()
     midanalyzer.getSlur()
     midanalyzer.getStaccato()
