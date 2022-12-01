@@ -28,6 +28,8 @@ class MIDIanalyzer:
         self.slur = None
         #スタッカートか否かを格納
         self.staccato = None
+        #各小節の平均velocity
+        self.average_var_per_bar = None
 
     
     def getMIDIfile(self, filename):
@@ -79,6 +81,7 @@ class MIDIanalyzer:
         self.staccato = [[] for i in range(self.track_num)]
         self.bar = [[] for i in range(self.track_num)]
         self.time = [[] for i in range(self.track_num)]
+        self.average_var_per_bar = [[] for i in range(self.track_num)]
         #track毎に値を取得
         for i in range(self.track_num):
             for msg in self.mid.tracks[i]:
@@ -200,6 +203,20 @@ class MIDIanalyzer:
         print("finish!")
         print(time_now)
 
+    def getAverageVelPerBar(self):
+        for i in range(0, self.track_num, 1):
+            for j in range(0, self.bar[i][-2], 1):
+                self.average_var_per_bar[i].append(0)
+                count = 0 #平均を求めるために必要なvelocityが０でないmessageの数を格納する変数
+                for k in range(0, len(self.velocity[i]), 1):
+                    if(self.bar[i][k] == j and self.velocity[i][k] != 0):
+                        self.average_var_per_bar[i][j] += self.velocity[i][k]
+                        count += 1#count=0となる場合の例外処理を追加すること
+                self.average_var_per_bar[i][j] = self.average_var_per_bar[i][j]/count
+                print(self.average_var_per_bar[i][j])
+                  
+
+
     def checkBug(self):
         print(self.mid.ticks_per_beat)        
         print("numerator = %d" %self.numerator)
@@ -229,7 +246,9 @@ if __name__=="__main__":
     midanalyzer.getRests()
     midanalyzer.getSlur()
     midanalyzer.getStaccato()
+    midanalyzer.getAverageVelPerBar()
     #for msg in enumerate(midanalyzer.mid.tracks):
     #    print(msg)
-    midanalyzer.checkBug()
+    #midanalyzer.checkBug()
     #midanalyzer.PrintBeat()
+    #print(midanalyzer.average_var_per_bar)
