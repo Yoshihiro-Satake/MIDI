@@ -212,7 +212,10 @@ class MIDIanalyzer:
                     if(self.bar[i][k] == j and self.velocity[i][k] != 0):
                         self.average_var_per_bar[i][j] += self.velocity[i][k]
                         count += 1#count=0となる場合の例外処理を追加すること
-                self.average_var_per_bar[i][j] = self.average_var_per_bar[i][j]/count
+                if(count == 0):#音を出さない小節がある場合
+                    self.average_var_per_bar[i][j] = 0
+                else:
+                    self.average_var_per_bar[i][j] = self.average_var_per_bar[i][j]/count
                 print(self.average_var_per_bar[i][j])
                   
 
@@ -228,11 +231,23 @@ class MIDIanalyzer:
         for i in range(0, len(self.velocity[-1])-1, 1):
             #print({'note': self.note[1][i], 'vel': self.velocity[1][i], 'time':self.delta_t[1][i], 'rest':self.rests[1][i], 'slur':self.slur[1][i], 'staccato':self.staccato[1][i]})        
             print({'note': self.note[-1][i], 'vel': self.velocity[-1][i], 'delta_t':self.delta_t[-1][i], 'time': self.time[-1][i], 'bar': self.bar[-1][i]})
+        
+    def play_midi(self):
+        ports = mido.get_output_names()
+        print(ports)
+        with mido.open_output(ports[-1]) as outport:
+            for msg in self.mid.tracks[-1]:
+                if msg.type == 'note_on':
+                    time.sleep(msg.time/self.ticks_per_beat*self.tempo/(10**6))
+                    print(outport, msg)
+                    outport.send(msg)
+
+    
 
 if __name__=="__main__":
     midanalyzer = MIDIanalyzer()
-    midanalyzer.getMIDIfile('happyfarmer_60.mid')
-    #midanalyzer.getMIDIfile('originalMIDI6.mid')
+    #midanalyzer.getMIDIfile('happyfarmer_60.mid')
+    midanalyzer.getMIDIfile('originalMIDI5.mid')
     #midanalyzer.getMIDIfile('burgmuller-op100-la-chevaleresque.mid')
     #midanalyzer.getMIDIfile('Burgmuller_100_25_kifujin.mid')
     midanalyzer.getTicksPerBeat()
@@ -247,8 +262,4 @@ if __name__=="__main__":
     midanalyzer.getSlur()
     midanalyzer.getStaccato()
     midanalyzer.getAverageVelPerBar()
-    #for msg in enumerate(midanalyzer.mid.tracks):
-    #    print(msg)
-    #midanalyzer.checkBug()
-    #midanalyzer.PrintBeat()
-    #print(midanalyzer.average_var_per_bar)
+    midanalyzer.play_midi()
